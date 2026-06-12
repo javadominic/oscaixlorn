@@ -154,13 +154,12 @@ src/app/
 
 ## 👥 Team
 
-Built entirely during the hackathon build phase. All code written live during the competition — no pre-built code pushed.
 
 | Name | Role |
 |---|---|
-| **Saeed Ansari** | Full Stack & AI Integration |
-| **Madhu Tiwari** | Full Stack & UI/UX |
-| **Priyanshu Pratik** | Full Stack & Backend |
+| **Saeed Ansari** | Full Stack & AI Integration & Ideatiion|
+| **Madhu Tiwari** |Full Stack & Backend  |
+| **Priyanshu Pratik** | Full Stack & UI/UX |
 
 ---
 
