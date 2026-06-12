@@ -4,8 +4,8 @@ import styles from '../Dashboard.module.css';
 import { useGlobalState } from '../GlobalStateContext';
 import { useRouter } from 'next/navigation';
 
-export default function ScribePage(props: { isDemo?: boolean, onDemoComplete?: () => void, onDemoStart?: () => void }) {
-    const { isDemo = false, onDemoComplete, onDemoStart } = props;
+export default function ScribePage(props: { isDemo?: boolean, onDemoComplete?: () => void, onDemoStart?: () => void, demoTrigger?: number }) {
+    const { isDemo = false, onDemoComplete, onDemoStart, demoTrigger } = props;
     const { patients, transcripts, setTranscripts, activePatientId, setActivePatientId, addTranscriptRecord, pharmacyAlerts, setPatients } = useGlobalState();
     const router = useRouter();
     const [isRecording, setIsRecording] = useState(false);
@@ -13,6 +13,50 @@ export default function ScribePage(props: { isDemo?: boolean, onDemoComplete?: (
     const [showPatientList, setShowPatientList] = useState(false);
     const recognitionRef = useRef<any>(null);
     const activePatientIdRef = useRef(activePatientId);
+
+    // Watch for the demoTrigger from DashboardShowcase
+    useEffect(() => {
+        if (demoTrigger && demoTrigger > 0) {
+            if (!isRecording) {
+                // If there's no active patient, pick the first one
+                if (!activePatientIdRef.current && patients.length > 0) {
+                    setActivePatientId(patients[0].id);
+                }
+                
+                // Set recording true and call onDemoStart immediately
+                setIsRecording(true);
+                if (onDemoStart) onDemoStart();
+
+                // Run the exact same sequence as toggleRecording demo logic
+                const demoLines = [
+                    { speaker: 'Doctor', text: 'Good morning, Priya. Kya takleef hai aapko?' },
+                    { speaker: 'Patient', text: 'Doctor, kal raat se sir mein bohot severe pain ho raha hai.' },
+                    { speaker: 'Doctor', text: 'I see. Vision mein kuch changes lag rahe hain? Any flashing lights?' },
+                    { speaker: 'Patient', text: 'Haan sir, zigzag lines dikhayi deti hain pain shuru hone se pehle.' },
+                    { speaker: 'Doctor', text: 'Theek hai. Aapka BP check karte hain... 120/80, which is normal. HR is 72.' },
+                    { speaker: 'Doctor', text: 'Priya, kya aapko koi acidity ya gastritis ki problem rahi hai pehle?' },
+                    { speaker: 'Patient', text: 'Haan sir, pain-killers lene se pet mein bohot jalan hoti hai.' },
+                    { speaker: 'Doctor', text: "Understood. I'll prescribe Sumatriptan 50mg for acute attacks. Take it 'Zaroorat padne par'." },
+                    { speaker: 'Doctor', text: 'Iska summary aapke ABHA app pe mil jayega. Pharmacist ko dikha dena.' }
+                ];
+
+                let lineIndex = 0;
+                const interval = setInterval(() => {
+                    if (lineIndex < demoLines.length) {
+                        const now = new Date();
+                        const timeStr = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+                        const targetId = activePatientIdRef.current || patients[0]?.id;
+                        if (targetId) addTranscriptRecord(targetId, { ...demoLines[lineIndex], time: timeStr });
+                        lineIndex++;
+                    } else {
+                        clearInterval(interval);
+                        setIsRecording(false);
+                        if (onDemoComplete) onDemoComplete();
+                    }
+                }, 1600);
+            }
+        }
+    }, [demoTrigger]);
 
     // Auto-scroll refs
     const transcriptContainerRef = useRef<HTMLDivElement>(null);
