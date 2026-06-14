@@ -84,7 +84,7 @@ export default function HandoverPage() {
                         </div>
                         <div>
                             <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold' }}>Vitals</span>
-                            <div style={{ fontSize: '14px' }}>BP: 120/80 | HR: 72 | Temp: 98.6°F</div>
+                            <div style={{ fontSize: '14px' }}>BP: {activePatient?.vitals?.bp || '120/80'} | HR: {activePatient?.vitals?.hr || '72'} | Temp: {activePatient?.vitals?.temp || '98.6°F'}</div>
                         </div>
                         <div>
                             <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold' }}>ABHA ID</span>
@@ -94,19 +94,24 @@ export default function HandoverPage() {
 
                     <div style={{ marginBottom: '24px' }}>
                         <h4 style={{ fontSize: '14px', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>Chief Complaint & HPI</h4>
-                        <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0 }}>Patient reports persistent headaches for 3 days, accompanied by visual auras (zigzag lines) prior to onset. Describes pain as throbbing.</p>
+                        <p style={{ fontSize: '14px', lineHeight: '1.6', margin: 0 }}>{activePatient?.hpi || 'No patient history recorded.'}</p>
                     </div>
 
                     <div style={{ marginBottom: '24px' }}>
                         <h4 style={{ fontSize: '14px', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>Clinical Diagnosis</h4>
-                        <p style={{ fontSize: '15px', fontWeight: 'bold', margin: 0 }}>Migraine with Aura (ICD-10: G43.1)</p>
+                        <p style={{ fontSize: '15px', fontWeight: 'bold', margin: 0 }}>{activePatient?.diagnosis || 'Diagnosis pending'}</p>
                     </div>
 
                     <div style={{ marginBottom: '32px' }}>
-                        <h4 style={{ fontSize: '14px', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>Investigations Ordered</h4>
+                        <h4 style={{ fontSize: '14px', color: '#64748b', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginBottom: '12px' }}>Treatment Plan & Investigations</h4>
                         <ul style={{ fontSize: '14px', lineHeight: '1.6', margin: 0, paddingLeft: '20px' }}>
-                            <li>Complete Blood Count (CBC)</li>
-                            <li>MRI Brain (if symptoms worsen)</li>
+                            {activePatient?.assessment && activePatient.assessment.length > 0 ? (
+                                activePatient.assessment.map((item: string, idx: number) => (
+                                    <li key={idx} style={{ whiteSpace: 'pre-line' }}>{item}</li>
+                                ))
+                            ) : (
+                                <li>No specific plan or investigations recorded.</li>
+                            )}
                         </ul>
                     </div>
 
@@ -115,10 +120,17 @@ export default function HandoverPage() {
                         <h3 style={{ fontSize: '18px', color: '#166534', margin: '0 0 16px 0', borderBottom: '1px solid #bbf7d0', paddingBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span style={{ fontSize: '24px' }}>℞</span> Final Prescription
                         </h3>
-                        <ol style={{ fontSize: '16px', lineHeight: '1.8', margin: 0, paddingLeft: '24px', fontWeight: '600', color: '#0f172a' }}>
-                            <li style={{ marginBottom: '8px' }}>Sumatriptan 50mg (SOS) - Take 1 tablet at onset of aura.</li>
-                            <li>Naproxen 500mg (BD x 3 days) - Take twice daily after meals.</li>
-                        </ol>
+                        <div style={{ fontSize: '16px', lineHeight: '1.8', margin: 0, fontWeight: '600', color: '#0f172a' }}>
+                            {activePatient?.assessment && activePatient.assessment.length > 0 ? (
+                                <ul style={{ paddingLeft: '24px', margin: 0 }}>
+                                    {activePatient.assessment.map((item: string, idx: number) => (
+                                        <li key={idx} style={{ marginBottom: '8px', whiteSpace: 'pre-line' }}>{item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p style={{ margin: 0, fontStyle: 'italic', fontWeight: 'normal' }}>Awaiting prescription details...</p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -134,21 +146,24 @@ export default function HandoverPage() {
 
                         <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', padding: '20px', borderRadius: '12px', marginBottom: '24px', textAlign: 'center' }}>
                             <span style={{ fontSize: '13px', color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Diagnosis</span>
-                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Viral Fever / Migraine</div>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>{activePatient?.diagnosis || 'Pending Diagnosis'}</div>
                         </div>
 
                         <div style={{ marginBottom: '24px' }}>
-                            <h4 style={{ fontSize: '15px', color: 'var(--color-text-primary)', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>How to take your medicines:</h4>
+                            <h4 style={{ fontSize: '15px', color: 'var(--color-text-primary)', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>Treatment Instructions:</h4>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid var(--color-accent-green)', padding: '16px', borderRadius: '6px' }}>
-                                    <h5 style={{ fontSize: '16px', margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>1. Sumatriptan 50mg</h5>
-                                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>Only when pain starts (दर्द शुरू होने पर)</p>
-                                </div>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid var(--color-accent-green)', padding: '16px', borderRadius: '6px' }}>
-                                    <h5 style={{ fontSize: '16px', margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>2. Naproxen 500mg</h5>
-                                    <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-primary)', fontWeight: 'bold' }}>सुबह, शाम - खाने के बाद (Morning & Evening, after meals)</p>
-                                </div>
+                                {activePatient?.assessment && activePatient.assessment.length > 0 ? (
+                                    activePatient.assessment.map((item: string, idx: number) => (
+                                        <div key={idx} style={{ background: 'rgba(16, 185, 129, 0.1)', borderLeft: '4px solid var(--color-accent-green)', padding: '16px', borderRadius: '6px' }}>
+                                            <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-primary)', fontWeight: 'bold', whiteSpace: 'pre-line' }}>{item}</p>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '6px', textAlign: 'center' }}>
+                                        <p style={{ margin: 0, fontSize: '14px', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>Please review the main prescription sheet.</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
