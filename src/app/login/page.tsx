@@ -28,7 +28,7 @@ export default function LoginPage() {
             case 'Receptionist': return '/dashboard/patients';
             case 'Doctor': return '/dashboard/scribe';
             case 'Pharmacist': return '/dashboard/handover';
-            case 'Admin': return '/dashboard/admin';
+            case 'Admin': return '/dashboard';         // Admin overview is at /dashboard
             default: return '/dashboard/scribe';
         }
     };
@@ -45,7 +45,7 @@ export default function LoginPage() {
                 const user = userCredential.user;
                 const userDocRef = doc(db, 'users', user.uid);
                 const name = fullName.trim() || email.split('@')[0];
-                
+
                 await setDoc(userDocRef, {
                     uid: user.uid,
                     email: user.email,
@@ -58,33 +58,33 @@ export default function LoginPage() {
                 localStorage.setItem('userName', name);
                 router.push(getRedirectPath(selectedRole));
             } else {
-                // Sign In flow
+                // Sign In flow — always use the role the user selected on this page
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDoc = await getDoc(userDocRef);
-                
-                if (userDoc.exists()) {
-                    const data = userDoc.data();
-                    localStorage.setItem('userRole', data.role || 'Doctor');
-                    localStorage.setItem('userName', data.name || 'Staff Member');
-                    router.push(getRedirectPath(data.role || 'Doctor'));
-                } else {
-                    // Profile document not created yet
-                    await setDoc(userDocRef, {
-                        uid: user.uid,
-                        email: user.email,
-                        name: user.displayName || email.split('@')[0],
-                        role: 'Doctor',
-                        createdAt: new Date().toISOString()
-                    });
-                    localStorage.setItem('userRole', 'Doctor');
-                    localStorage.setItem('userName', user.displayName || 'Staff Member');
-                    router.push('/dashboard/scribe');
-                }
+                const name = userDoc.exists() ? (userDoc.data().name || email.split('@')[0]) : email.split('@')[0];
+
+                // Update role in Firestore to match what they selected
+                await setDoc(userDocRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    name: name,
+                    role: selectedRole,
+                }, { merge: true });
+
+                localStorage.setItem('userRole', selectedRole);
+                localStorage.setItem('userName', name);
+                router.push(getRedirectPath(selectedRole));
             }
         } catch (err: any) {
-            setError(err.message || 'Authentication failed. Please try again.');
+            const code = (err as any).code;
+            const msg = code === 'auth/invalid-credential' || code === 'auth/wrong-password'
+                ? 'Invalid email or password. Please try again.'
+                : code === 'auth/email-already-in-use'
+                ? 'This email is already registered. Please sign in instead.'
+                : err.message || 'Authentication failed. Please try again.';
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -99,28 +99,24 @@ export default function LoginPage() {
             const result = await signInWithPopup(auth, provider);
             const user = result.user;
             const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
+            const name = user.displayName || user.email?.split('@')[0] || 'Staff Member';
 
-            if (userDoc.exists()) {
-                const data = userDoc.data();
-                localStorage.setItem('userRole', data.role || 'Doctor');
-                localStorage.setItem('userName', data.name || user.displayName || 'Staff Member');
-                router.push(getRedirectPath(data.role || 'Doctor'));
-            } else {
-                // Show role selection or default to Doctor
-                await setDoc(userDocRef, {
-                    uid: user.uid,
-                    email: user.email,
-                    name: user.displayName || 'Staff Member',
-                    role: 'Doctor',
-                    createdAt: new Date().toISOString()
-                });
-                localStorage.setItem('userRole', 'Doctor');
-                localStorage.setItem('userName', user.displayName || 'Staff Member');
-                router.push('/dashboard/scribe');
-            }
+            // Update Firestore with the selected role
+            await setDoc(userDocRef, {
+                uid: user.uid,
+                email: user.email,
+                name: name,
+                role: selectedRole,
+            }, { merge: true });
+
+            localStorage.setItem('userRole', selectedRole);
+            localStorage.setItem('userName', name);
+            router.push(getRedirectPath(selectedRole));
         } catch (err: any) {
-            setError(err.message || 'Google Sign-In failed.');
+            const msg = (err as any).code === 'auth/popup-closed-by-user'
+                ? 'Sign-in cancelled.'
+                : err.message || 'Google Sign-In failed.';
+            setError(msg);
         } finally {
             setLoading(false);
         }
@@ -163,6 +159,46 @@ export default function LoginPage() {
                         </div>
                     )}
 
+                    {/* Role Selector — always visible */}
+                    <div style={{ marginBottom: '4px' }}>
+                        <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '8px', fontWeight: '600' }}>
+                            {isSignUp ? 'Designated Role' : 'Sign in as'}
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            {[
+                                { value: 'Doctor', icon: '🩺', color: '#10b981' },
+                                { value: 'Receptionist', icon: '📋', color: '#3b82f6' },
+                                { value: 'Pharmacist', icon: '💊', color: '#f59e0b' },
+                                { value: 'Admin', icon: '📊', color: '#8b5cf6' },
+                            ].map(r => (
+                                <button
+                                    key={r.value}
+                                    type="button"
+                                    onClick={() => setSelectedRole(r.value)}
+                                    style={{
+                                        padding: '10px 8px',
+                                        background: selectedRole === r.value ? `${r.color}20` : 'var(--color-workspace-bg)',
+                                        border: `2px solid ${selectedRole === r.value ? r.color : 'rgba(255,255,255,0.08)'}`,
+                                        borderRadius: '8px',
+                                        color: selectedRole === r.value ? r.color : 'var(--color-text-secondary)',
+                                        cursor: 'pointer',
+                                        fontSize: '13px',
+                                        fontWeight: selectedRole === r.value ? '700' : '500',
+                                        transition: 'all 0.15s',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <span>{r.icon}</span>
+                                    {r.value === 'Admin' ? 'Super Admin' : r.value}
+                                    {selectedRole === r.value && <span style={{ fontSize: '10px' }}>✓</span>}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <form onSubmit={handleFirebaseLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {isSignUp && (
                             <div>
@@ -201,24 +237,8 @@ export default function LoginPage() {
                             />
                         </div>
 
-                        {isSignUp && (
-                            <div>
-                                <label style={{ display: 'block', fontSize: '13px', color: 'var(--color-text-secondary)', marginBottom: '6px' }}>Designated Role</label>
-                                <select
-                                    value={selectedRole}
-                                    onChange={e => setSelectedRole(e.target.value)}
-                                    style={{ width: '100%', padding: '10px 14px', background: 'var(--color-workspace-bg)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'var(--color-text-primary)', cursor: 'pointer', outline: 'none' }}
-                                >
-                                    <option value="Doctor">Doctor</option>
-                                    <option value="Receptionist">Receptionist</option>
-                                    <option value="Pharmacist">Pharmacist</option>
-                                    <option value="Admin">Super Admin</option>
-                                </select>
-                            </div>
-                        )}
-
                         <button type="submit" disabled={loading} style={{ background: 'var(--color-accent-green)', color: '#fff', padding: '12px', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', opacity: loading ? 0.7 : 1 }}>
-                            {loading ? 'Authenticating...' : isSignUp ? 'Create Account' : 'Sign In'}
+                            {loading ? 'Authenticating...' : isSignUp ? `Create Account as ${selectedRole}` : `Sign In as ${selectedRole}`}
                         </button>
                     </form>
 
