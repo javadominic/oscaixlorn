@@ -54,8 +54,6 @@ export default function LoginPage() {
                     createdAt: new Date().toISOString()
                 });
 
-                localStorage.setItem('userRole', selectedRole);
-                localStorage.setItem('userName', name);
                 router.push(getRedirectPath(selectedRole));
             } else {
                 // Sign In flow — always use the role the user selected on this page
@@ -73,8 +71,6 @@ export default function LoginPage() {
                     role: selectedRole,
                 }, { merge: true });
 
-                localStorage.setItem('userRole', selectedRole);
-                localStorage.setItem('userName', name);
                 router.push(getRedirectPath(selectedRole));
             }
         } catch (err: any) {
@@ -109,8 +105,6 @@ export default function LoginPage() {
                 role: selectedRole,
             }, { merge: true });
 
-            localStorage.setItem('userRole', selectedRole);
-            localStorage.setItem('userName', name);
             router.push(getRedirectPath(selectedRole));
         } catch (err: any) {
             const msg = (err as any).code === 'auth/popup-closed-by-user'

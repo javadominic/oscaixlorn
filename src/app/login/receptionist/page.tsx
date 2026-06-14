@@ -24,11 +24,9 @@ export default function ReceptionistLogin() {
 
             if (userDoc.exists()) {
                 const data = userDoc.data();
-                localStorage.setItem('userRole', data.role || 'Receptionist');
-                localStorage.setItem('userName', data.name || user.displayName || 'Front Desk');
+                // Removed localStorage bypassing; AuthContext will pick this up
             } else {
-                localStorage.setItem('userRole', 'Receptionist');
-                localStorage.setItem('userName', user.displayName || 'Front Desk');
+                // Removed localStorage bypassing; AuthContext will pick this up
             }
             router.push('/dashboard/patients');
         } catch (err: any) {

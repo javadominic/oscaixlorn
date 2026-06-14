@@ -24,11 +24,9 @@ export default function AdminLogin() {
 
             if (userDoc.exists()) {
                 const data = userDoc.data();
-                localStorage.setItem('userRole', data.role || 'Admin');
-                localStorage.setItem('userName', data.name || user.displayName || 'Super Admin');
+                // Removed localStorage bypassing; AuthContext will pick this up
             } else {
-                localStorage.setItem('userRole', 'Admin');
-                localStorage.setItem('userName', user.displayName || 'Super Admin');
+                // Removed localStorage bypassing; AuthContext will pick this up
             }
             router.push('/dashboard');
         } catch (err: any) {

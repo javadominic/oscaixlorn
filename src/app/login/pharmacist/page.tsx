@@ -24,11 +24,9 @@ export default function PharmacistLogin() {
 
             if (userDoc.exists()) {
                 const data = userDoc.data();
-                localStorage.setItem('userRole', data.role || 'Pharmacist');
-                localStorage.setItem('userName', data.name || user.displayName || 'Pharmacy Dept.');
+                // Removed localStorage bypassing; AuthContext will pick this up
             } else {
-                localStorage.setItem('userRole', 'Pharmacist');
-                localStorage.setItem('userName', user.displayName || 'Pharmacy Dept.');
+                // Removed localStorage bypassing; AuthContext will pick this up
             }
             router.push('/dashboard/handover');
         } catch (err: any) {

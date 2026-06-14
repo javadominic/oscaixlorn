@@ -79,8 +79,7 @@ export default function DemoPage() {
 
     const handleEnter = (role: typeof roles[0]) => {
         setEntering(role.id);
-        localStorage.setItem('userRole', role.roleKey);
-        localStorage.setItem('userName', role.nameKey);
+        // We just redirect and rely on Firebase context for demo bypassing now, or let preview mode handle it.
         setTimeout(() => router.push(role.redirect), 600);
     };
 

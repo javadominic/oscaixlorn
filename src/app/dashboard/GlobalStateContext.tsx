@@ -55,18 +55,30 @@ type GlobalStateContextType = {
 
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
 
-export function GlobalStateProvider({ children }: { children: ReactNode }) {
+export function GlobalStateProvider({ children, isPreview = false }: { children: ReactNode, isPreview?: boolean }) {
     const [patients, setPatients] = useState<any[]>([]);
     const [transcripts, setTranscripts] = useState<Record<string, any[]>>({});
     const [activePatientId, setActivePatientId] = useState('');
 
     // Load and Sync Patients from Firestore
     useEffect(() => {
+        if (isPreview) {
+            setPatients(INITIAL_PATIENTS);
+            if (INITIAL_PATIENTS.length > 0 && !activePatientId) {
+                setActivePatientId(INITIAL_PATIENTS[0].id);
+            }
+            return;
+        }
+        
         const unsubscribe = onSnapshot(collection(db, 'patients'), async (snapshot) => {
             if (snapshot.empty) {
                 // Seed database with mock data if empty
                 for (const patient of INITIAL_PATIENTS) {
-                    await setDoc(doc(db, 'patients', patient.id), patient);
+                    try {
+                        await setDoc(doc(db, 'patients', patient.id), patient);
+                    } catch (e) {
+                        console.error('Seed error:', e);
+                    }
                 }
             } else {
                 const list: any[] = [];
@@ -78,21 +90,30 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
                     setActivePatientId(list[0].id);
                 }
             }
+        }, (error) => {
+            console.error("Patients sync error:", error);
         });
         return () => unsubscribe();
-    }, [activePatientId]);
+    }, [activePatientId, isPreview]);
 
     // Load and Sync Transcripts from Firestore
     useEffect(() => {
+        if (isPreview) {
+            setTranscripts(INITIAL_TRANSCRIPTS);
+            return;
+        }
+
         const unsubscribe = onSnapshot(collection(db, 'transcripts'), (snapshot) => {
             const dict: Record<string, any[]> = {};
             snapshot.forEach((doc) => {
                 dict[doc.id] = doc.data().records || [];
             });
             setTranscripts(prev => ({ ...prev, ...dict }));
+        }, (error) => {
+            console.error("Transcripts sync error:", error);
         });
         return () => unsubscribe();
-    }, []);
+    }, [isPreview]);
 
     // Clinic Details configuration
     const [clinicDetails, setClinicDetails] = useState({
@@ -113,6 +134,10 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
     const addPatient = async (patient: any) => {
         try {
+            if (isPreview) {
+                setPatients(prev => [...prev, patient]);
+                return;
+            }
             await setDoc(doc(db, 'patients', patient.id), patient);
             await setDoc(doc(db, 'transcripts', patient.id), { records: [] });
         } catch (e) {
@@ -122,6 +147,10 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
     const updatePatient = async (patientId: string, updates: any) => {
         try {
+            if (isPreview) {
+                setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+                return;
+            }
             await setDoc(doc(db, 'patients', patientId), updates, { merge: true });
         } catch (e) {
             console.error("Error updating patient in Firestore:", e);
@@ -130,6 +159,13 @@ export function GlobalStateProvider({ children }: { children: ReactNode }) {
 
     const addTranscriptRecord = async (patientId: string, entry: any) => {
         try {
+            if (isPreview) {
+                setTranscripts(prev => {
+                    const currentList = prev[patientId] || [];
+                    return { ...prev, [patientId]: [...currentList, entry] };
+                });
+                return;
+            }
             const currentList = transcripts[patientId] || [];
             const updated = [...currentList, entry];
             await setDoc(doc(db, 'transcripts', patientId), { records: updated }, { merge: true });

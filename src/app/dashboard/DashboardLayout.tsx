@@ -5,14 +5,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import styles from './DashboardLayout.module.css';
+import { useAuth } from '../../context/AuthContext';
 import { GlobalStateProvider } from './GlobalStateContext';
 
 export default function DashboardLayout({ children, isPreview = false, previewRole }: { children: React.ReactNode, isPreview?: boolean, previewRole?: string }) {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const pathname = usePathname();
     const router = useRouter();
-    const [userRole, setUserRole] = useState<string | null>(null);
-    const [userName, setUserName] = useState<string | null>(null);
+    const { role, userName } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
 
     const adminLinks = [
@@ -28,11 +28,10 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
     ];
     useEffect(() => {
         setIsMounted(true);
-        const role = previewRole || localStorage.getItem('userRole') || 'doctor';
-        const name = localStorage.getItem('userName') || 'Dr. Rajesh Sharma';
-        setUserRole(role.toLowerCase());
-        setUserName(name);
     }, []);
+
+    const computedRole = (previewRole || role || 'doctor').toLowerCase();
+    const computedName = userName || 'Dr. Rajesh Sharma';
 
     const handleLogout = async () => {
         try {
@@ -40,8 +39,6 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
         } catch (e) {
             console.error("Firebase signout error:", e);
         }
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
         router.push('/login');
     };
 
@@ -57,7 +54,7 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
 
                 <nav className={styles.sidebarNav}>
                     {/* Admin Links */}
-                    {(userRole === 'admin') && (
+                    {(computedRole === 'admin') && (
                         <>
                             {adminLinks.map((link) => (
                                 <Link href={link.href} key={link.href} style={{ textDecoration: 'none' }}>
@@ -71,7 +68,7 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
                     )}
 
                     {/* Receptionist Links */}
-                    {userRole === 'receptionist' && (
+                    {computedRole === 'receptionist' && (
                         <>
                             <Link href="/dashboard/patients" style={{ textDecoration: 'none' }}>
                                 <div className={`${styles.navItem} ${pathname.includes('/patients') ? styles.active : ''}`}>
@@ -90,7 +87,7 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
                     )}
 
                     {/* Doctor Links */}
-                    {userRole === 'doctor' && (
+                    {computedRole === 'doctor' && (
                         <>
                             <Link href="/dashboard/scribe" style={{ textDecoration: 'none' }}>
                                 <div className={`${styles.navItem} ${pathname.includes('/scribe') ? styles.active : ''}`}>
@@ -116,7 +113,7 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
                     )}
 
                     {/* Pharmacist Links */}
-                    {userRole === 'pharmacist' && pharmacistLinks.map((link) => (
+                    {computedRole === 'pharmacist' && pharmacistLinks.map((link) => (
                         <Link href={link.href} key={link.label} style={{ textDecoration: 'none' }}>
                             <div className={`${styles.navItem} ${pathname === link.href ? styles.activeNav : ''}`}>
                                 <span className={styles.navIcon}>{link.icon}</span>
@@ -139,19 +136,19 @@ export default function DashboardLayout({ children, isPreview = false, previewRo
 
                     <div className={styles.userProfile} style={{ marginTop: '16px' }}>
                         <div className={styles.avatar}>
-                            <img src={userRole === 'doctor' ? "https://i.pravatar.cc/150?u=a042581f4e39026704d" : "https://i.pravatar.cc/150?u=fake2"} alt={userName || 'Super Admin'} className={styles.avatarImg} />
+                            <img src={computedRole === 'doctor' ? "https://i.pravatar.cc/150?u=a042581f4e39026704d" : "https://i.pravatar.cc/150?u=fake2"} alt={computedName} className={styles.avatarImg} />
                             <div className={styles.statusDot}></div>
                         </div>
                         <div className={styles.userInfo}>
-                            <span className={styles.userName}>{userName || 'Super Admin'}</span>
-                            <span className={styles.userRole} style={{ textTransform: 'capitalize' }}>{userRole}</span>
+                            <span className={styles.userName}>{computedName}</span>
+                            <span className={styles.userRole} style={{ textTransform: 'capitalize' }}>{computedRole}</span>
                         </div>
                     </div>
                 </div>
             </aside >
 
             <main className={styles.mainContent}>
-                <GlobalStateProvider>
+                <GlobalStateProvider isPreview={isPreview}>
                     {children}
                 </GlobalStateProvider>
             </main>

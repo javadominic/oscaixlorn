@@ -33,10 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         const data = userDoc.data();
                         setRole(data.role || 'Receptionist');
                         setUserName(data.name || firebaseUser.displayName || 'Staff Member');
-                        
-                        // Sync to localStorage to keep current dashboard behaviors intact
-                        localStorage.setItem('userRole', data.role || 'Receptionist');
-                        localStorage.setItem('userName', data.name || firebaseUser.displayName || 'Staff Member');
+                        setRole(data.role || 'Receptionist');
+                        setUserName(data.name || firebaseUser.displayName || 'Staff Member');
                     } else {
                         // Default profile if not found
                         const defaultRole = 'Receptionist';
@@ -49,8 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         });
                         setRole(defaultRole);
                         setUserName(defaultName);
-                        localStorage.setItem('userRole', defaultRole);
-                        localStorage.setItem('userName', defaultName);
                     }
                 } catch (e) {
                     console.error("Error loading user profile", e);
@@ -68,8 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async () => {
         await signOut(auth);
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('userName');
     };
 
     return (

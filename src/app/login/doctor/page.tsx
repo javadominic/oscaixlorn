@@ -24,11 +24,9 @@ export default function DoctorLogin() {
 
             if (userDoc.exists()) {
                 const data = userDoc.data();
-                localStorage.setItem('userRole', data.role || 'Doctor');
-                localStorage.setItem('userName', data.name || user.displayName || 'Doctor');
+                // Removed localStorage bypassing; AuthContext will pick this up
             } else {
-                localStorage.setItem('userRole', 'Doctor');
-                localStorage.setItem('userName', user.displayName || 'Doctor');
+                // Removed localStorage bypassing; AuthContext will pick this up
             }
             router.push('/dashboard/scribe');
         } catch (err: any) {
